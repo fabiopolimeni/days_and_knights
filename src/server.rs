@@ -31,10 +31,11 @@ pub fn main() {
             let hero = heros[rng.gen_range(0..heros.len())];
             let hero_str = hero.to_string();
 
-
             let idle_clip = PlayClipFromUrlNodeRef::new(
                 assets::url(format!("characters/{}/{}.glb/animations/Idle_36.anim", hero_str, hero_str).as_str()),
             );
+
+            let anim_player = AnimationPlayerRef::new(&idle_clip);
 
             entity::add_components(
                 id,
@@ -49,7 +50,8 @@ pub fn main() {
                             scale: Some(Vec3::ONE * 0.3),
                             ..Default::default()
                         },
-                    }),
+                    })
+                    .with(apply_animation_player(), anim_player.0),
             );
         }
     });
