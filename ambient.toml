@@ -1,0 +1,9 @@
+[package]
+id = "j6wtadrs2qgnvijqpadk336bkb2xsezr"
+name = "days_and_knights"
+version = "0.0.1"
+content = { type = "Playable" }
+ambient_version = "0.3.2-dev"
+
+[dependencies]
+orbit_camera = { deployment = "16errWVktnKFdrbFofKCAE" }
