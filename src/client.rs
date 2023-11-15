@@ -11,6 +11,7 @@ use ambient_api::{
 };
 
 use packages::orbit_camera::concepts::OrbitCamera;
+use packages::this::messages::Action;
 
 #[main]
 pub fn main() {
@@ -45,4 +46,61 @@ pub fn main() {
             entity::set_component(sun, light_diffuse(), Vec3::ZERO);
         }
     });
+
+    // Send input actions to the server
+    fixed_rate_tick(Duration::from_millis(20), move |_| {
+        let Some(camera_id) = camera::get_active() else {
+            return;
+        };
+
+        let input = input::get();
+
+        let mut action = Action {
+            point_ray_origin: Vec3::ZERO,
+            point_ray_direction: Vec3::ZERO,
+            primary_attack: false,
+            secondary_attack: false,
+            health_potion: false,
+            mana_potion: false,
+            jump: false,
+            interact: false,
+            sprint: false,
+        };
+
+        if input.mouse_buttons.contains(&MouseButton::Left) {
+            let screen_ray = camera::screen_position_to_world_ray(camera_id, input.mouse_position);
+            action.point_ray_origin = screen_ray.origin;
+            action.point_ray_direction = screen_ray.dir;
+
+            if input.keys.contains(&KeyCode::LShift) {
+                action.sprint = true;
+            }
+        }
+
+        if input.keys.contains(&KeyCode::S) {
+            action.health_potion = true;
+        }
+        else if input.keys.contains(&KeyCode::W) {
+            action.mana_potion = true;
+        }
+
+        if input.keys.contains(&KeyCode::Space) {
+            action.jump = true;
+        }
+
+        if input.keys.contains(&KeyCode::E) {
+            action.interact = true;
+        }
+
+        if input.keys.contains(&KeyCode::D) {
+            action.primary_attack = true;
+        }
+
+        if input.keys.contains(&KeyCode::A) {
+            action.secondary_attack = true;
+        }
+
+        action.send_server_unreliable();
+    });
+
 }
