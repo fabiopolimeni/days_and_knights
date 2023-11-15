@@ -26,3 +26,10 @@ drink = "Bool"
 interact = "Bool"
 jump = "Bool"
 sprint = "Bool"
+
+[enums.PhysicsLayer]
+descritpion = "Physics layers"
+members = { Ground = "Ground", Character = "Character", Interactable = "Interactable" }
+
+[components]
+physics_layer = { type = "PhysicsLayer", name = "Physics Layers Component", description = "Physics layers used to filter physics collisions", attributes = ["Debuggable"] }

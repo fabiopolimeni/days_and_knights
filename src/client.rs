@@ -7,7 +7,7 @@ use ambient_api::{
         rendering::components::{fog_density, light_ambient, light_diffuse, sky, sun},
         transform::components::rotation,
     },
-    prelude::*, input::is_game_focused,
+    prelude::*,
 };
 
 use packages::this::messages::*;
@@ -83,7 +83,7 @@ pub fn main() {
             sprint: false,
         };
 
-        let send_action = if !delta.keys.is_empty() {
+        let mut send_action = if !delta.keys.is_empty() {
             true
         } else {
             false
@@ -91,6 +91,9 @@ pub fn main() {
 
         if delta.keys.contains(&KeyCode::LShift) {
             action_input.sprint = true;
+        } else if delta.keys_released.contains(&KeyCode::LShift) {
+            action_input.sprint = false;
+            send_action = true;
         }
 
         if delta.keys.contains(&KeyCode::Space) {

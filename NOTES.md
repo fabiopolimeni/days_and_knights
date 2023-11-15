@@ -3,23 +3,25 @@
 ## API
 
 * `Vec3::FORWARD/UP/RIGHT` do not exists? Are useful fot not to think aboung coordinate system. Maybe should be a Pos2/3?
-* `add_components()` function is very confusing. Is it adding the components of an entity to the provided entity?
-Why is it not expecting a list of components instead?
-* No CharacterController specific documentation.
-* Why I don't Collision::subscribe from the `physics` API documentation, where is it? Is it in messages, so the server does subscribe to messages to receive collision events?
+* Would be nice to get more out of the Transform
+* `add_components()` function is very confusing. Is it adding the components of an entity to the provided entity?,Why is it not expecting a list of components?
+* No CharacterController specific documentation, and a lot of other components and concepts. I have the feeling the TOML file declaration does not feel right for documentation.
+* Why I don't get the Collision::subscribe API from the `physics` documentation, where is it? Is it in messages, so the server does subscribe to messages to receive collision events?
 * `client_entity_id()`, why it is not really `client_player_id()`?
 * Why messages don't have Default trait implementation?
 * Why Collision and Frame are messages? I understand we use messages through packages, but why?
+* Confusing the fact that within the core module there exist modules named the same as some of the outer ones, such as `animation`, `physics` etc.
+* It looks like there are a bit of mismatching on the concept of entities and transformations. Parent/children can still be ok, but `in_area` and `get_transformers_relative_to` look misplaced at a first glance.
 
 ## Components
  
 * Water doesn't seem to have other params to control, such as wave steeps, flow speed, look and feel, etc. I couldn't do the project I wanted to. Also, can't create shaders, nor update meshes. So, no piraty game.
 * How do I make the sun smaller? Does it even make sense?
 * Animation nodes and refs are enities instead of components and they need to be despawned? Very counter intuitive.
-* The name of the animations get an automatic `_#` which will be very difficult to predict before hand, hence difficult to create pipeline but for simple demos.
+* The name of the animations get an automatic `_#` which will be very difficult to predict before hand, hence difficult to create CI pipelines but for simple demos.
 * No navmesh. Point and click is unfeasible.
 
 ## Tools
 
-* `--debugger` is broken, it crashes, and it is packed with obscure information hardly useful for a novice, or at all?
-* Online Rust Ambient API documentation keeps returning 404 error. I guess it happens every time the documentation is uploaded, even the URL simply points to latest.
+* `--debugger` is broken, it crashes, and it is packed with obscure information hardly useful for a novice, or at all, and impossible to inspect?
+* Online Rust Ambient API documentation keeps returning 404 error. I guess it happens every time the documentation is uploaded, even the URL simply points to latest. Weird though.
