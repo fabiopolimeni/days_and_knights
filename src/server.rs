@@ -1,5 +1,5 @@
 use ambient_api::{
-    animation::{self, AnimationPlayerRef, BindId, BlendNodeRef, PlayClipFromUrlNodeRef, PlayMode},
+    animation::{AnimationPlayerRef, PlayClipFromUrlNodeRef},
     core::{
         animation::components::apply_animation_player,
         model::components::model_from_url,
