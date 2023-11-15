@@ -2,16 +2,28 @@ use ambient_api::{
     animation::{AnimationPlayerRef, PlayClipFromUrlNodeRef},
     core::{
         animation::components::apply_animation_player,
+        app::components::name,
+        hierarchy::components::children,
         model::components::model_from_url,
+        physics::{components::{plane_collider, visualize_collider}, concepts::CharacterController},
         player::components::is_player,
-        transform::{concepts::{Transformable, TransformableOptional}, components::scale},
-        physics::{concepts::CharacterController, components::plane_collider}, primitives::components::quad, rendering::components::color,
+        primitives::components::{cube, quad},
+        rendering::components::color,
+        transform::{
+            components::{scale, translation},
+            concepts::{Transformable, TransformableOptional},
+        },
     },
+    entity::get_component,
     prelude::*,
     rand,
 };
 
+use packages::character_movement::concepts::*;
+use packages::unit_schema::components::*;
+
 use packages::this::assets;
+use packages::this::messages::*;
 
 mod hero;
 
@@ -65,13 +77,64 @@ pub async fn main() {
                         local_to_world: Default::default(),
                         optional: TransformableOptional::default(),
                     })
+                    .with(visualize_collider(), ())
                     .with(apply_animation_player(), anim_player.0)
-                    .with_merge(CharacterController {
-                        character_controller_height: 0.5,
-                        character_controller_radius: 1.8,
-                        physics_controlled: ()
+                    .with_merge(CharacterMovement {
+                        character_controller_height: 3.0,
+                        character_controller_radius: 1.0,
+                        physics_controlled: (),
+                        rotation: Quat::IDENTITY,
+                        run_direction: Vec2::ZERO,
+                        vertical_velocity: 0.0,
+                        running: false,
+                        jumping: false,
+                        is_on_ground: true,
+                        optional: CharacterMovementOptional::default(),
                     }),
             );
+
+            println!(
+                "Player {:?} has children {:?}",
+                player_id,
+                entity::get_component(player_id, children())
+            );
+            for child_id in entity::get_component(player_id, children()).unwrap_or_default() {
+                let name = entity::get_component(child_id, name());
+                println!("Child {:?} has name {:?}", child_id, name)
+            }
+
+            println!("Player {:?} joined as {}", player_id, hero);
+        }
+    });
+
+    Movement::subscribe(|ctx, msg| {
+        let player_id = ctx.client_entity_id().unwrap();
+        println!("Player {:?} sent {:?}", player_id, msg);
+
+        // let Some(hit) = physics::raycast_first(msg.screen_ray_origin, msg.screen_ray_direction)
+        // else {
+        //     return;
+        // };
+
+        // TODO: Check whether we have hit the ground
+
+        // Entity::new()
+        //     .with(cube(), ())
+        //     .with(translation(), hit.position)
+        //     .with(scale(), Vec3::ONE * 0.1)
+        //     .with(color(), vec4(0., 1., 0., 1.))
+        //     .spawn();
+    });
+
+    Action::subscribe(|ctx, msg| {
+        let player_id = ctx.client_entity_id().unwrap();
+        println!("Player {:?} sent {:?}", player_id, msg);
+
+        println!("{:#?}", entity::get_component(player_id, vertical_velocity()));
+
+        if entity::get_component(player_id, is_on_ground()).unwrap_or_default() {
+            entity::set_component(player_id, vertical_velocity(), 0.2);
+            entity::set_component(player_id, jumping(), true);
         }
     });
 }

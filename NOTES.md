@@ -2,9 +2,14 @@
 
 ## API
 
-* `Vec3::FORWARD/UP/RIGHT` do not exists? Are useful fot not to thik aboung coordinate system.
+* `Vec3::FORWARD/UP/RIGHT` do not exists? Are useful fot not to think aboung coordinate system. Maybe should be a Pos2/3?
 * `add_components()` function is very confusing. Is it adding the components of an entity to the provided entity?
 Why is it not expecting a list of components instead?
+* No CharacterController specific documentation.
+* Why I don't Collision::subscribe from the `physics` API documentation, where is it? Is it in messages, so the server does subscribe to messages to receive collision events?
+* `client_entity_id()`, why it is not really `client_player_id()`?
+* Why messages don't have Default trait implementation?
+* Why Collision and Frame are messages? I understand we use messages through packages, but why?
 
 ## Components
  
@@ -17,7 +22,4 @@ Why is it not expecting a list of components instead?
 ## Tools
 
 * `--debugger` is broken, it crashes, and it is packed with obscure information hardly useful for a novice, or at all?
-
-## Messages
-
-* Why it doesn't create a Default trait implementation?
+* Online Rust Ambient API documentation keeps returning 404 error. I guess it happens every time the documentation is uploaded, even the URL simply points to latest.

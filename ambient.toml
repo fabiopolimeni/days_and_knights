@@ -7,17 +7,22 @@ ambient_version = "0.3.2-dev"
 
 [dependencies]
 orbit_camera = { deployment = "16errWVktnKFdrbFofKCAE" }
+unit_schema = { deployment = "hfv4W9UuED197vKDfol7g" }
+character_movement = { deployment = "2TMMtfgQwAplpQtmAfyzci" }
+
+[messages.Movement.Input]
+descritpion = "Input messages for heros movement"
+
+[messages.Movement.fields]
+screen_ray_origin = "Vec3"
+screen_ray_direction = "Vec3"
 
 [messages.Action.Input]
-descritpion = "Input messages for heros movement and actions"
+descritpion = "Input messages for heros actions"
 
 [messages.Action.fields]
-point_ray_origin = "Vec3"
-point_ray_direction = "Vec3"
-primary_attack = "Bool"
-secondary_attack = "Bool"
-health_potion = "Bool"
-mana_potion = "Bool"
+attack = "Bool"
+drink = "Bool"
 interact = "Bool"
 jump = "Bool"
 sprint = "Bool"

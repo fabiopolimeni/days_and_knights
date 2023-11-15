@@ -7,11 +7,11 @@ use ambient_api::{
         rendering::components::{fog_density, light_ambient, light_diffuse, sky, sun},
         transform::components::rotation,
     },
-    prelude::*,
+    prelude::*, input::is_game_focused,
 };
 
-use packages::orbit_camera::concepts::OrbitCamera;
-use packages::this::messages::Action;
+use packages::this::messages::*;
+use packages::{orbit_camera::concepts::OrbitCamera, this::messages::Movement};
 
 #[main]
 pub fn main() {
@@ -30,7 +30,7 @@ pub fn main() {
 
     Frame::subscribe(move |_| {
         let time = game_time().as_secs_f32();
-        
+
         // Negate it to start from daylight
         let sun_speed = -0.2f32;
 
@@ -47,60 +47,70 @@ pub fn main() {
         }
     });
 
-    // Send input actions to the server
     fixed_rate_tick(Duration::from_millis(20), move |_| {
         let Some(camera_id) = camera::get_active() else {
             return;
         };
 
-        let input = input::get();
-
-        let mut action = Action {
-            point_ray_origin: Vec3::ZERO,
-            point_ray_direction: Vec3::ZERO,
-            primary_attack: false,
-            secondary_attack: false,
-            health_potion: false,
-            mana_potion: false,
-            jump: false,
-            interact: false,
-            sprint: false,
+        let mut move_input = Movement {
+            screen_ray_origin: Vec3::ZERO,
+            screen_ray_direction: Vec3::ZERO,
         };
+
+        let input = input::get();
 
         if input.mouse_buttons.contains(&MouseButton::Left) {
             let screen_ray = camera::screen_position_to_world_ray(camera_id, input.mouse_position);
-            action.point_ray_origin = screen_ray.origin;
-            action.point_ray_direction = screen_ray.dir;
-
-            if input.keys.contains(&KeyCode::LShift) {
-                action.sprint = true;
-            }
+            move_input.screen_ray_origin = screen_ray.origin;
+            move_input.screen_ray_direction = screen_ray.dir;
+            move_input.send_server_unreliable();
         }
-
-        if input.keys.contains(&KeyCode::S) {
-            action.health_potion = true;
-        }
-        else if input.keys.contains(&KeyCode::W) {
-            action.mana_potion = true;
-        }
-
-        if input.keys.contains(&KeyCode::Space) {
-            action.jump = true;
-        }
-
-        if input.keys.contains(&KeyCode::E) {
-            action.interact = true;
-        }
-
-        if input.keys.contains(&KeyCode::D) {
-            action.primary_attack = true;
-        }
-
-        if input.keys.contains(&KeyCode::A) {
-            action.secondary_attack = true;
-        }
-
-        action.send_server_unreliable();
     });
 
+    // Send input actions to the server
+    Frame::subscribe(move |_| {
+        // if !is_game_focused() {
+        //     return;
+        // }
+        
+        let (delta, _) = input::get_delta();
+
+        let mut action_input = Action {
+            attack: false,
+            drink: false,
+            interact: false,
+            jump: false,
+            sprint: false,
+        };
+
+        let send_action = if !delta.keys.is_empty() {
+            true
+        } else {
+            false
+        };
+
+        if delta.keys.contains(&KeyCode::LShift) {
+            action_input.sprint = true;
+        }
+
+        if delta.keys.contains(&KeyCode::Space) {
+            action_input.jump = true;
+        }
+        
+        if delta.keys.contains(&KeyCode::S) {
+            action_input.drink = true;
+        }
+
+        if delta.keys.contains(&KeyCode::A) {
+            action_input.interact = true;
+        }
+
+        if delta.keys.contains(&KeyCode::D) {
+            action_input.attack = true;
+        }
+
+        if send_action {
+            action_input.send_server_unreliable();
+        }
+    });
 }
