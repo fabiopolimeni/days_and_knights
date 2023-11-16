@@ -20,9 +20,13 @@
 * Animation nodes and refs are enities instead of components and they need to be despawned? Very counter intuitive.
 * The name of the animations get an automatic `_#` which will be very difficult to predict before hand, hence difficult to create CI pipelines but for simple demos.
 * No navmesh. Point and click is unfeasible.
-* I feel I should have used the `animation_controller`, but the lack of documentation made me opt for writing my simpler animator than spending time learning an undocumented component.
+* I feel I should have used the `animation_controller`, but the lack of documentation made me opt for writing my simpler animator, rather than spending time learning an undocumented component.
 
 ## Tools
 
 * `--debugger` is broken, it crashes, and it is packed with obscure information hardly useful for a novice, or at all, and impossible to inspect?
 * Online Rust Ambient API documentation keeps returning 404 error. I guess it happens every time the documentation is uploaded, even the URL simply points to latest. Weird though.
+
+## Bugs
+
+* It seems I am not able to load GLTF files and FBX ones.

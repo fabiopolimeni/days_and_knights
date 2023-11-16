@@ -7,15 +7,15 @@ use ambient_api::{
         rendering::components::{fog_density, light_ambient, light_diffuse, sky, sun},
         transform::components::rotation,
     },
-    prelude::*,
+    prelude::*, entity::get_component,
 };
 
-use packages::this::messages::*;
+use packages::{this::messages::*, orbit_camera::components::camera_angle};
 use packages::{orbit_camera::concepts::OrbitCamera, orbit_camera::concepts::OrbitCameraOptional, this::messages::Movement};
 
 #[main]
 pub fn main() {
-    OrbitCamera {
+    let camera = OrbitCamera {
         is_orbit_camera: (),
         optional: OrbitCameraOptional {
             camera_distance: Some(15.0),
@@ -53,6 +53,11 @@ pub fn main() {
             // It is night
             entity::set_component(sun, light_diffuse(), Vec3::ZERO);
         }
+
+        // Fix camera angle
+        let mut angle = get_component(camera, camera_angle()).unwrap_or_default();
+        angle.y = PI / 4.0;
+        entity::set_component(camera, camera_angle(), angle);
     });
 
     fixed_rate_tick(Duration::from_millis(30), move |_| {

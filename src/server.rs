@@ -39,7 +39,7 @@ pub async fn main() {
     // Temporary ground
     Entity::new()
         .with(quad(), ())
-        .with(scale(), Vec3::ONE * 10.0)
+        .with(scale(), Vec3::ONE * 100.0)
         .with(color(), vec4(0.1, 0.1, 0.1, 1.0))
         .with(plane_collider(), ())
         .with(physics_layer(), PhysicsLayer::Ground)
@@ -88,6 +88,23 @@ pub async fn main() {
     let anim_player_drink = AnimationPlayerRef::new(&drink_clip);
     let anim_player_attack = AnimationPlayerRef::new(&attack_clip);
     let anim_player_interact = AnimationPlayerRef::new(&interact_clip);
+
+    // Spawn a skeleton
+    let skeleton = Entity::new()
+        .with(
+            model_from_url(),
+            assets::url("skeletons/Mage/character_skeleton_mage.glb"),
+        )
+        .with_merge(Transformable {
+            local_to_world: Default::default(),
+            optional: TransformableOptional {
+                translation: Some(vec3(4.0, 2.0, 0.0)),
+                ..default()
+            }
+        })
+        .with(apply_animation_player(), anim_player_idle.0)
+        .with(physics_layer(), PhysicsLayer::Character)
+        .spawn();
 
     spawn_query(is_player()).bind(move |players| {
         // For each player that joins, spawn a random hero
