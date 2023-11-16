@@ -5,9 +5,6 @@
             "name": "Launch",
             "type": "lldb",
             "request": "launch",
-            "windows": {
-                "program": "ambient-dev.exe"
-            },
             "program": "ambient",
             "args": [
                 "run"
@@ -17,9 +14,6 @@
             "name": "Debugger",
             "type": "lldb",
             "request": "launch",
-            "windows": {
-                "program": "ambient-dev.exe"
-            },
             "program": "ambient",
             "args": [
                 "run",

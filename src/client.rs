@@ -11,11 +11,19 @@ use ambient_api::{
 };
 
 use packages::this::messages::*;
-use packages::{orbit_camera::concepts::OrbitCamera, this::messages::Movement};
+use packages::{orbit_camera::concepts::OrbitCamera, orbit_camera::concepts::OrbitCameraOptional, this::messages::Movement};
 
 #[main]
 pub fn main() {
-    OrbitCamera::suggested().spawn();
+    OrbitCamera {
+        is_orbit_camera: (),
+        optional: OrbitCameraOptional {
+            camera_distance: Some(15.0),
+            camera_angle: Some(Vec2::new(PI, PI / 4.0)),
+            ..default()
+        },
+    }
+    .spawn();
 
     Entity::new().with(sky(), ()).spawn();
 
@@ -47,7 +55,7 @@ pub fn main() {
         }
     });
 
-    fixed_rate_tick(Duration::from_millis(20), move |_| {
+    fixed_rate_tick(Duration::from_millis(30), move |_| {
         let Some(camera_id) = camera::get_active() else {
             return;
         };

@@ -20,6 +20,7 @@
 * Animation nodes and refs are enities instead of components and they need to be despawned? Very counter intuitive.
 * The name of the animations get an automatic `_#` which will be very difficult to predict before hand, hence difficult to create CI pipelines but for simple demos.
 * No navmesh. Point and click is unfeasible.
+* I feel I should have used the `animation_controller`, but the lack of documentation made me opt for writing my simpler animator than spending time learning an undocumented component.
 
 ## Tools
 
