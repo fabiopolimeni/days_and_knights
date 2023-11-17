@@ -308,20 +308,21 @@ pub async fn main() {
         let is_drinking = entity::get_component(player_id, drinking()).unwrap_or_default();
         let is_attacking = entity::get_component(player_id, attacking()).unwrap_or_default();
         let is_interacting = entity::get_component(player_id, interacting()).unwrap_or_default();
+        let is_acting = is_drinking || is_attacking || is_interacting;
 
-        if msg.drink && !is_drinking && !is_moving {
+        if msg.drink && !is_acting && !is_moving {
             drink_clip.restart();
             entity::set_component(player_id, apply_animation_player(), anim_player_drink.0);
             entity::set_component(player_id, drinking(), true);
             entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is drinking", player_id);
-        } else if msg.attack && !is_attacking && !is_moving {
+        } else if msg.attack && !is_acting && !is_moving {
             attack_clip.restart();
             entity::set_component(player_id, apply_animation_player(), anim_player_attack.0);
             entity::set_component(player_id, attacking(), true);
             entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is attacking", player_id);
-        } else if msg.interact && !is_interacting && !is_moving {
+        } else if msg.interact && !is_acting && !is_moving {
             interact_clip.restart();
             entity::set_component(player_id, apply_animation_player(), anim_player_interact.0);
             entity::set_component(player_id, interacting(), true);
@@ -336,9 +337,9 @@ pub async fn main() {
                 if !entity::has_component(player_id, start_time()) {
                     continue;
                 }
+
                 let clip_start_time = entity::get_component(player_id, start_time()).unwrap_or_default();
-                let cur_time = game_time();
-                let elapsed_time = (cur_time - clip_start_time).as_secs_f32();
+                let elapsed_time = (game_time() - clip_start_time).as_secs_f32();
                 let anim_player = entity::get_component(player_id, apply_animation_player())
                     .unwrap_or_default();
 
@@ -363,6 +364,12 @@ pub async fn main() {
                         entity::remove_component(player_id, start_time());
                         println!("Player {:?} is done interacting", player_id);
                     }
+                } else {
+                    // Clenup states in case the animation was interrupted
+                    entity::set_component(player_id, drinking(), false);
+                    entity::set_component(player_id, attacking(), false);
+                    entity::set_component(player_id, interacting(), false);
+                    entity::remove_component(player_id, start_time());
                 }
             }
         });
