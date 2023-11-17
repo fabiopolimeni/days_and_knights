@@ -18,7 +18,7 @@ pub fn main() {
     let camera = OrbitCamera {
         is_orbit_camera: (),
         optional: OrbitCameraOptional {
-            camera_distance: Some(15.0),
+            camera_distance: Some(30.0),
             camera_angle: Some(Vec2::new(PI, PI / 4.0)),
             ..default()
         },
