@@ -17,19 +17,21 @@ use ambient_api::{
     rand,
 };
 
+use hero::MAX_REMAINING_LOCOMOTION_TIME;
 use packages::character_movement::concepts::*;
 use packages::unit_schema::components::*;
 
 use packages::this::assets;
-use packages::this::components::physics_layer;
+use packages::this::components::*;
+use packages::this::concepts::*;
 use packages::this::messages::*;
-use packages::this::types::PhysicsLayer;
+use packages::this::types::*;
 
 mod hero;
 
 #[main]
 pub async fn main() {
-    let heros = [
+    let hero_classes = [
         hero::Class::Barbarian,
         hero::Class::Knight,
         hero::Class::Mage,
@@ -40,7 +42,7 @@ pub async fn main() {
     Entity::new()
         .with(quad(), ())
         .with(scale(), Vec3::ONE * 100.0)
-        .with(color(), vec4(0.1, 0.1, 0.1, 1.0))
+        .with(color(), vec4(0.2, 0.2, 0.2, 1.0))
         .with(plane_collider(), ())
         .with(physics_layer(), PhysicsLayer::Ground)
         .spawn();
@@ -48,25 +50,67 @@ pub async fn main() {
     // Load all hero animations.
     // Note: Because all heroes share the same animations, we can simply load those ones from the first hero.
     let idle_clip = PlayClipFromUrlNodeRef::new(assets::url(
-        format!("characters/{}/{}.glb/animations/Idle_36.anim", heros[0].to_string(), heros[0].to_string()).as_str()));
+        format!(
+            "characters/{}/{}.glb/animations/Idle_36.anim",
+            hero_classes[0].to_string(),
+            hero_classes[0].to_string()
+        )
+        .as_str(),
+    ));
 
     let walking_clip = PlayClipFromUrlNodeRef::new(assets::url(
-        format!("characters/{}/{}.glb/animations/Walking_B_73.anim", heros[0].to_string(), heros[0].to_string()).as_str()));
+        format!(
+            "characters/{}/{}.glb/animations/Walking_B_73.anim",
+            hero_classes[0].to_string(),
+            hero_classes[0].to_string()
+        )
+        .as_str(),
+    ));
 
     let running_clip = PlayClipFromUrlNodeRef::new(assets::url(
-        format!("characters/{}/{}.glb/animations/Running_A_48.anim", heros[0].to_string(), heros[0].to_string()).as_str()));
+        format!(
+            "characters/{}/{}.glb/animations/Running_A_48.anim",
+            hero_classes[0].to_string(),
+            hero_classes[0].to_string()
+        )
+        .as_str(),
+    ));
 
     let jump_clip = PlayClipFromUrlNodeRef::new(assets::url(
-        format!("characters/{}/{}.glb/animations/Jump_Full_Short_39.anim", heros[0].to_string(), heros[0].to_string()).as_str()));
+        format!(
+            "characters/{}/{}.glb/animations/Jump_Full_Short_39.anim",
+            hero_classes[0].to_string(),
+            hero_classes[0].to_string()
+        )
+        .as_str(),
+    ));
 
     let drink_clip = PlayClipFromUrlNodeRef::new(assets::url(
-        format!("characters/{}/{}.glb/animations/Use_Item_71.anim", heros[0].to_string(), heros[0].to_string()).as_str()));
+        format!(
+            "characters/{}/{}.glb/animations/Use_Item_71.anim",
+            hero_classes[0].to_string(),
+            hero_classes[0].to_string()
+        )
+        .as_str(),
+    ));
 
     let attack_clip = PlayClipFromUrlNodeRef::new(assets::url(
-        format!("characters/{}/{}.glb/animations/1H_Melee_Attack_Slice_Diagonal_1.anim", heros[0].to_string(), heros[0].to_string()).as_str()));
+        format!(
+            "characters/{}/{}.glb/animations/1H_Melee_Attack_Slice_Diagonal_1.anim",
+            hero_classes[0].to_string(),
+            hero_classes[0].to_string()
+        )
+        .as_str(),
+    ));
 
     let interact_clip = PlayClipFromUrlNodeRef::new(assets::url(
-        format!("characters/{}/{}.glb/animations/Interact_37.anim", heros[0].to_string(), heros[0].to_string()).as_str()));
+        format!(
+            "characters/{}/{}.glb/animations/Interact_37.anim",
+            hero_classes[0].to_string(),
+            hero_classes[0].to_string()
+        )
+        .as_str(),
+    ));
 
     idle_clip.wait_for_load().await;
     walking_clip.wait_for_load().await;
@@ -100,7 +144,7 @@ pub async fn main() {
             optional: TransformableOptional {
                 translation: Some(vec3(4.0, 2.0, 0.0)),
                 ..default()
-            }
+            },
         })
         .with(apply_animation_player(), anim_player_idle.0)
         .with(physics_layer(), PhysicsLayer::Character)
@@ -110,7 +154,7 @@ pub async fn main() {
         // For each player that joins, spawn a random hero
         for (player_id, _) in players {
             let mut rng = rand::thread_rng();
-            let hero = heros[rng.gen_range(0..heros.len())];
+            let hero = hero_classes[rng.gen_range(0..hero_classes.len())];
             let hero_str = hero.to_string();
 
             entity::add_components(
@@ -120,11 +164,13 @@ pub async fn main() {
                         model_from_url(),
                         assets::url(format!("characters/{}/{}.glb", hero_str, hero_str).as_str()),
                     )
+                    .with(apply_animation_player(), anim_player_idle.0)
+                    .with(physics_layer(), PhysicsLayer::Character)
+                    .with(locomotion_remaining_time(), 0.0)
                     .with_merge(Transformable {
                         local_to_world: Default::default(),
                         optional: TransformableOptional::default(),
                     })
-                    .with(apply_animation_player(), anim_player_idle.0)
                     .with_merge(CharacterMovement {
                         character_controller_height: 3.0,
                         character_controller_radius: 1.0,
@@ -138,11 +184,10 @@ pub async fn main() {
                         optional: CharacterMovementOptional {
                             run_speed_multiplier: Some(hero::SPEED_MULTIPLIER),
                             speed: Some(0.0),
-                            air_speed_multiplier: Some(0.0),
-                            strafe_speed_multiplier: Some(0.0),
+                            ..default()
                         },
                     })
-                    .with(physics_layer(), PhysicsLayer::Character), //.with(visualize_collider(), ()),
+                    .with_merge(Hero::suggested()),
             );
 
             println!("Player {:?} joined as {}", player_id, hero);
@@ -192,42 +237,56 @@ pub async fn main() {
                 let run_dir_xy = (move_rot * Vec3::Y).xy().normalize();
                 entity::set_component(player_id, run_direction(), run_dir_xy);
                 entity::set_component(player_id, speed(), hero::SPEED);
+                entity::set_component(
+                    player_id,
+                    locomotion_remaining_time(),
+                    MAX_REMAINING_LOCOMOTION_TIME,
+                );
             }
         }
     });
 
-    // Amazing trick to decrement character speed over time
-    change_query(speed())
-        .track_change(speed())
-        .bind(move|players| {
+    change_query(locomotion_remaining_time())
+        .track_change(locomotion_remaining_time())
+        .bind(move |players| {
             for (player_id, cur_speed) in players {
-                let new_speed = (cur_speed - 0.01).clamp(0.0, hero::MAX_SPEED);
+                let locomotion_time = entity::get_component(player_id, locomotion_remaining_time())
+                    .unwrap_or_default();
 
-                // This query only traks whether the component has been set, it does not
-                // track the actual value of the component whether it has changed or not.
-                if new_speed == cur_speed {
-                    continue;
-                }
-
-                entity::set_component(player_id, speed(), new_speed);
-
-                // Apply the correct locomotion animation based on the current speed
-                if new_speed > 0.0 {
-                    let is_running =
-                        entity::get_component(player_id, running()).unwrap_or_default();
-                    if is_running {
-                        entity::set_component(player_id, apply_animation_player(), anim_player_run.0);
-                    } else {
-                        entity::set_component(player_id, apply_animation_player(), anim_player_walk.0);
+                let remaining_time = locomotion_time - delta_time();
+                if remaining_time > 0.0 {
+                    entity::set_component(player_id, locomotion_remaining_time(), remaining_time);
+                    if cur_speed > 0.0 {
+                        entity::set_component(player_id, moving(), true);
+                        let is_running =
+                            entity::get_component(player_id, running()).unwrap_or_default();
+                        if is_running {
+                            println!("Player {:?} is running", player_id);
+                            entity::set_component(
+                                player_id,
+                                apply_animation_player(),
+                                anim_player_run.0,
+                            );
+                        } else {
+                            println!("Player {:?} is walking", player_id);
+                            entity::set_component(
+                                player_id,
+                                apply_animation_player(),
+                                anim_player_walk.0,
+                            );
+                        }
                     }
-                } else {
+                } else if locomotion_time > f32::EPSILON {
                     println!("Player {:?} is idle", player_id);
+                    entity::set_component(player_id, locomotion_remaining_time(), 0.0);
+                    entity::set_component(player_id, speed(), 0.0);
+                    entity::set_component(player_id, moving(), false);
                     entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
                 }
             }
         });
 
-    Action::subscribe(move|ctx, msg| {
+    Action::subscribe(move |ctx, msg| {
         let player_id = ctx.client_entity_id().unwrap();
         println!("Player {:?} sent {:?}", player_id, msg);
 
@@ -238,15 +297,14 @@ pub async fn main() {
             entity::set_component(player_id, apply_animation_player(), anim_player_jump.0);
             println!("Player {:?} is jumping", player_id);
         }
-        
+
         if msg.sprint == true {
             entity::set_component(player_id, running(), true);
         } else if msg.sprint == false {
             entity::set_component(player_id, running(), false);
         }
 
-        let speed = entity::get_component(player_id, speed()).unwrap_or_default();
-        let is_moving = if speed < 0.001 { false } else { true };
+        let is_moving = entity::get_component(player_id, moving()).unwrap_or_default();
 
         if msg.drink && !is_moving {
             drink_clip.restart();

@@ -33,3 +33,19 @@ members = { Ground = "Ground", Character = "Character", Interactable = "Interact
 
 [components]
 physics_layer = { type = "PhysicsLayer", name = "Physics Layers Component", description = "Physics layers used to filter physics collisions", attributes = ["Debuggable"] }
+is_hero = { type = "Empty", attributes = ["Debuggable", "Networked"] }
+drinking = { type = "Bool", name = "Drinking Component", description = "Component used to indicate that character is drinking", attributes = ["Debuggable"] }
+interacting = { type = "Bool", name = "Interacting Component", description = "Component used to indicate that character is interacting", attributes = ["Debuggable"] }
+moving = { type = "Bool", name = "Moving Component", description = "Component used to indicate that character is moving", attributes = ["Debuggable"] }
+attacking = { type = "Bool", name = "Attacking Component", description = "Component used to indicate that character is attacking", attributes = ["Debuggable"] }
+locomotion_remaining_time = { type = "F32", name = "Locomotion Remaining Time Component", description = "Component used to indicate how much time is left for locomotion", attributes = ["Debuggable"] }
+
+[concepts.Hero]
+name = "Hero"
+description = "Hero is a playable character"
+[concepts.Hero.components.required]
+is_hero = { suggested = {} }
+drinking = { suggested = false }
+interacting = { suggested = false }
+moving = { suggested = false }
+attacking = { suggested = false }
