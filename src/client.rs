@@ -2,10 +2,9 @@ use std::f32::consts::PI;
 
 use ambient_api::{
     core::{
-        app::components::main_scene,
         messages::Frame,
         rendering::components::{fog_density, light_ambient, light_diffuse, sky, sun},
-        transform::components::{rotation, lookat_target}, player::components::is_player,
+        transform::components::rotation,
     },
     prelude::*, entity::get_component,
 };
