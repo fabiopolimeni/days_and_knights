@@ -5,7 +5,7 @@ use ambient_api::{
         app::components::main_scene,
         messages::Frame,
         rendering::components::{fog_density, light_ambient, light_diffuse, sky, sun},
-        transform::components::rotation,
+        transform::components::{rotation, lookat_target}, player::components::is_player,
     },
     prelude::*, entity::get_component,
 };
@@ -18,7 +18,7 @@ pub fn main() {
     let camera = OrbitCamera {
         is_orbit_camera: (),
         optional: OrbitCameraOptional {
-            camera_distance: Some(30.0),
+            camera_distance: Some(25.0),
             camera_angle: Some(Vec2::new(PI, PI / 4.0)),
             ..default()
         },
@@ -27,33 +27,27 @@ pub fn main() {
 
     Entity::new().with(sky(), ()).spawn();
 
-    let sun = Entity::new()
-        .with(sun(), 0.0)
-        .with(rotation(), Quat::IDENTITY)
-        .with(main_scene(), ())
-        .with(light_diffuse(), Vec3::ONE * 1.0)
-        .with(light_ambient(), Vec3::ONE * 0.1)
-        .with(fog_density(), 0.)
-        .spawn();
+    spawn_query(sun()).bind(move |suns| {
+        let sun = suns[0].0;
+        entity::add_component(sun, light_ambient(), Vec3::ONE * 0.1);
+        entity::add_component(sun, light_diffuse(), Vec3::ONE);
+        entity::add_component(sun, fog_density(), 0.0);
+    });
 
-    Frame::subscribe(move |_| {
-        let time = game_time().as_secs_f32();
-
-        // Negate it to start from daylight
-        let sun_speed = -0.2f32;
-
-        let rot = Quat::from_axis_angle(vec3(0.0, 1.0, 0.5).normalize(), time * sun_speed);
-        entity::set_component(sun, rotation(), rot);
+    query(sun()).each_frame(move |suns| {
+        let rot = entity::get_component(suns[0].0, rotation()).unwrap_or_default();
         let (_, _, z) = rot.to_euler(glam::EulerRot::XYZ);
 
         if z < 0.0 && z > -PI {
             // It is day
-            entity::set_component(sun, light_diffuse(), Vec3::ONE);
+            entity::set_component(suns[0].0, light_diffuse(), Vec3::ONE);
         } else {
             // It is night
-            entity::set_component(sun, light_diffuse(), Vec3::ZERO);
+            entity::set_component(suns[0].0, light_diffuse(), Vec3::ZERO);
         }
+    });
 
+    Frame::subscribe(move |_| {
         // Fix camera angle
         let mut angle = get_component(camera, camera_angle()).unwrap_or_default();
         angle.y = PI / 4.0;

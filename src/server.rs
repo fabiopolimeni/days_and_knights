@@ -7,11 +7,11 @@ use ambient_api::{
         physics::components::plane_collider,
         player::components::is_player,
         primitives::components::{cube, quad},
-        rendering::components::color,
+        rendering::components::{color, sun},
         transform::{
             components::{rotation, scale, translation},
             concepts::{Transformable, TransformableOptional},
-        },
+        }, app::components::main_scene, messages::Frame,
     },
     prelude::*,
     rand,
@@ -46,6 +46,22 @@ pub async fn main() {
         .with(plane_collider(), ())
         .with(physics_layer(), PhysicsLayer::Ground)
         .spawn();
+
+    let sun = Entity::new()
+        .with(sun(), 0.0)
+        .with(rotation(), Quat::IDENTITY)
+        .with(main_scene(), ())
+        .spawn();
+
+    Frame::subscribe(move |_| {
+        let time = game_time().as_secs_f32();
+
+        // Negate it to start from daylight
+        let sun_speed = -0.2f32;
+
+        let rot = Quat::from_axis_angle(vec3(0.0, 1.0, 0.5).normalize(), time * sun_speed);
+        entity::set_component(sun, rotation(), rot);
+    });
 
     // Load all hero animations.
     // Note: Because all heroes share the same animations, we can simply load those ones from the first hero.
