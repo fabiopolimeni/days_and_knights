@@ -60,7 +60,7 @@ pub fn main() {
         entity::set_component(camera, camera_angle(), angle);
     });
 
-    fixed_rate_tick(Duration::from_millis(30), move |_| {
+    fixed_rate_tick(Duration::from_millis(100), move |_| {
         let Some(camera_id) = camera::get_active() else {
             return;
         };

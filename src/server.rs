@@ -1,7 +1,7 @@
 use ambient_api::{
     animation::{AnimationPlayerRef, PlayClipFromUrlNodeRef},
     core::{
-        animation::components::apply_animation_player,
+        animation::components::{apply_animation_player, start_time},
         ecs::components::remove_at_game_time,
         model::components::model_from_url,
         physics::components::plane_collider,
@@ -167,7 +167,6 @@ pub async fn main() {
                     .with(apply_animation_player(), anim_player_idle.0)
                     .with(physics_layer(), PhysicsLayer::Character)
                     .with(locomotion_remaining_time(), 0.0)
-                    .with(game_timestamp(), game_time())
                     .with_merge(Transformable {
                         local_to_world: Default::default(),
                         optional: TransformableOptional::default(),
@@ -234,32 +233,16 @@ pub async fn main() {
 
             // Only move if the player is not too close to the target
             if move_diff.length_squared() >= hero::MIN_MOVE_DISTANCE {
-                // In order to make the movement velocity independent of the frame rate,
-                // we need to multiply the speed by the delta time we last entered this function.
-                // But, if the character was not moving, then this is the first time we enter this function,
-                // so we need to use a default value for the delta time, which is going to be the fixed tick rate.
-                let prv_speed = entity::get_component(player_id, speed()).unwrap_or_default();
-                let prv_game_timestamp =
-                    entity::get_component(player_id, game_timestamp()).unwrap_or_default();
-                let speed_time = if prv_speed <= f32::EPSILON || prv_game_timestamp.is_zero() {
-                    delta_time()
-                }
-                else {
-                    (game_time() - entity::get_component(player_id, game_timestamp()).unwrap_or_default()).as_secs_f32()
-                };
-
                 // Find the direction the player is running in World space
                 let run_dir_xy = (move_rot * Vec3::Y).xy().normalize();
                 entity::set_component(player_id, run_direction(), run_dir_xy);
-                entity::set_component(player_id, speed(), hero::SPEED * speed_time);
+                entity::set_component(player_id, speed(), hero::SPEED);
                 entity::set_component(
                     player_id,
                     locomotion_remaining_time(),
                     MAX_REMAINING_LOCOMOTION_TIME,
                 );
             }
-
-            entity::set_component(player_id, game_timestamp(), game_time());
         }
     });
 
@@ -322,19 +305,65 @@ pub async fn main() {
         }
 
         let is_moving = entity::get_component(player_id, moving()).unwrap_or_default();
+        let is_drinking = entity::get_component(player_id, drinking()).unwrap_or_default();
+        let is_attacking = entity::get_component(player_id, attacking()).unwrap_or_default();
+        let is_interacting = entity::get_component(player_id, interacting()).unwrap_or_default();
 
-        if msg.drink && !is_moving {
+        if msg.drink && !is_drinking && !is_moving {
             drink_clip.restart();
             entity::set_component(player_id, apply_animation_player(), anim_player_drink.0);
+            entity::set_component(player_id, drinking(), true);
+            entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is drinking", player_id);
-        } else if msg.attack && !is_moving {
+        } else if msg.attack && !is_attacking && !is_moving {
             attack_clip.restart();
             entity::set_component(player_id, apply_animation_player(), anim_player_attack.0);
+            entity::set_component(player_id, attacking(), true);
+            entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is attacking", player_id);
-        } else if msg.interact && !is_moving {
+        } else if msg.interact && !is_interacting && !is_moving {
             interact_clip.restart();
             entity::set_component(player_id, apply_animation_player(), anim_player_interact.0);
+            entity::set_component(player_id, interacting(), true);
+            entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is interacting", player_id);
         }
     });
+
+    // Every frame, check whether a player has a start_time() component and if so, check whether the animation is done.
+    query(is_player()).each_frame(move |players| {
+            for (player_id, _) in players {
+                if !entity::has_component(player_id, start_time()) {
+                    continue;
+                }
+                let clip_start_time = entity::get_component(player_id, start_time()).unwrap_or_default();
+                let cur_time = game_time();
+                let elapsed_time = (cur_time - clip_start_time).as_secs_f32();
+                let anim_player = entity::get_component(player_id, apply_animation_player())
+                    .unwrap_or_default();
+
+                if anim_player == anim_player_drink.0 {
+                    if elapsed_time >= drink_clip.peek_clip_duration().unwrap_or_default() {
+                        entity::set_component(player_id, drinking(), false);
+                        entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                        entity::remove_component(player_id, start_time());
+                        println!("Player {:?} is done drinking", player_id);
+                    }
+                } else if anim_player == anim_player_attack.0 {
+                    if elapsed_time >= attack_clip.peek_clip_duration().unwrap_or_default() {
+                        entity::set_component(player_id, attacking(), false);
+                        entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                        entity::remove_component(player_id, start_time());
+                        println!("Player {:?} is done attacking", player_id);
+                    }
+                } else if anim_player == anim_player_interact.0 {
+                    if elapsed_time >= interact_clip.peek_clip_duration().unwrap_or_default() {
+                        entity::set_component(player_id, interacting(), false);
+                        entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                        entity::remove_component(player_id, start_time());
+                        println!("Player {:?} is done interacting", player_id);
+                    }
+                }
+            }
+        });
 }
