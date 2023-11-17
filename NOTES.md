@@ -11,16 +11,17 @@
 * Why messages don't have Default trait implementation?
 * Why Collision and Frame are messages? I understand we use messages through packages, but why?
 * Confusing the fact that within the core module there exist modules named the same as some of the outer ones, such as `animation`, `physics` etc.
-* It looks like there are a bit of mismatching on the concept of entities and transformations. Parent/children can still be ok, but `in_area` and `get_transformers_relative_to` look misplaced at a first glance.
+* It looks like there are a bit of mismatching on the concept of entities and transformations. Parent/children can still be ok, but `in_area` and `get_transformers_relative_to` look misplaced at a first glance. Also, it gives the chance to do the same thing through different APIs, which will contribute to API fragmentation.
 
 ## Components
  
-* Water doesn't seem to have other params to control, such as wave steeps, flow speed, look and feel, etc. I couldn't do the project I wanted to. Also, can't create shaders, nor update meshes. So, no piraty game.
+* The water component doesn't seem to have other params to control, such as wave steeps, flow speed, look and feel, etc. I couldn't do the project I wanted to. Also, can't create shaders, nor update meshes. So, no piraty game.
+* No navmesh. Point and click games are unfeasible.
 * How do I make the sun smaller? Does it even make sense?
 * Animation nodes and refs are enities instead of components and they need to be despawned? Very counter intuitive.
-* The name of the animations get an automatic `_#` which will be very difficult to predict before hand, hence difficult to create CI pipelines but for simple demos.
-* No navmesh. Point and click is unfeasible.
-* I feel I should have used the `animation_controller`, but the lack of documentation made me opt for writing my simpler animator, rather than spending time learning an undocumented component.
+* The name of the animations get an automatic `_#` which makes difficult to predict before hand, hence create CI pipelines but for simple demos.
+* I feel I should have used the `animation_controller`, but the lack of documentation made me opt for writing a simpler animator, rather than spending time learning an undocumented component.
+* Why the AnimationPlayer element is an UI thingy? Also it would have been nice to get an example of how to use it.
 
 ## Tools
 
@@ -29,4 +30,4 @@
 
 ## Bugs
 
-* It seems I am not able to load GLTF files and FBX ones.
+* It seems I am not able to load GLTF and FBX files.
