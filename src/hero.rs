@@ -2,8 +2,8 @@
 
 use std::fmt;
 
-pub const SPEED: f32 = 0.15;
-pub const SPEED_MULTIPLIER: f32 = 2.0;
+pub const SPEED: f32 = 1.5;
+pub const SPEED_MULTIPLIER: f32 = 2.5;
 pub const MAX_SPEED: f32 = SPEED * SPEED_MULTIPLIER;
 pub const MIN_MOVE_DISTANCE: f32 = 1.0;
 pub const MAX_REMAINING_LOCOMOTION_TIME: f32 = 1. / 10.;

@@ -167,6 +167,7 @@ pub async fn main() {
                     .with(apply_animation_player(), anim_player_idle.0)
                     .with(physics_layer(), PhysicsLayer::Character)
                     .with(locomotion_remaining_time(), 0.0)
+                    .with(game_timestamp(), game_time())
                     .with_merge(Transformable {
                         local_to_world: Default::default(),
                         optional: TransformableOptional::default(),
@@ -233,16 +234,32 @@ pub async fn main() {
 
             // Only move if the player is not too close to the target
             if move_diff.length_squared() >= hero::MIN_MOVE_DISTANCE {
+                // In order to make the movement velocity independent of the frame rate,
+                // we need to multiply the speed by the delta time we last entered this function.
+                // But, if the character was not moving, then this is the first time we enter this function,
+                // so we need to use a default value for the delta time, which is going to be the fixed tick rate.
+                let prv_speed = entity::get_component(player_id, speed()).unwrap_or_default();
+                let prv_game_timestamp =
+                    entity::get_component(player_id, game_timestamp()).unwrap_or_default();
+                let speed_time = if prv_speed <= f32::EPSILON || prv_game_timestamp.is_zero() {
+                    delta_time()
+                }
+                else {
+                    (game_time() - entity::get_component(player_id, game_timestamp()).unwrap_or_default()).as_secs_f32()
+                };
+
                 // Find the direction the player is running in World space
                 let run_dir_xy = (move_rot * Vec3::Y).xy().normalize();
                 entity::set_component(player_id, run_direction(), run_dir_xy);
-                entity::set_component(player_id, speed(), hero::SPEED);
+                entity::set_component(player_id, speed(), hero::SPEED * speed_time);
                 entity::set_component(
                     player_id,
                     locomotion_remaining_time(),
                     MAX_REMAINING_LOCOMOTION_TIME,
                 );
             }
+
+            entity::set_component(player_id, game_timestamp(), game_time());
         }
     });
 
