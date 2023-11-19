@@ -23,6 +23,7 @@ descritpion = "Input messages for heros movement"
 [messages.Movement.fields]
 screen_ray_origin = "Vec3"
 screen_ray_direction = "Vec3"
+move_direction = "Vec2"
 
 [messages.Action.Input]
 descritpion = "Input messages for heros actions"

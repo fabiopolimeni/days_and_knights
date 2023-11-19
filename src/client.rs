@@ -110,6 +110,7 @@ pub async fn main() {
         let mut move_input = Movement {
             screen_ray_origin: Vec3::ZERO,
             screen_ray_direction: Vec3::ZERO,
+            move_direction: Vec2::ZERO,
         };
 
         let input = input::get();
@@ -118,6 +119,35 @@ pub async fn main() {
             let screen_ray = camera::screen_position_to_world_ray(camera_id, input.mouse_position);
             move_input.screen_ray_origin = screen_ray.origin;
             move_input.screen_ray_direction = screen_ray.dir;
+        }
+
+        // Figure out what's the camera's forward vector
+        let camera_position = entity::get_component(camera_id, translation()).unwrap_or_default();
+        let target_position = entity::get_component(camera_id, lookat_target()).unwrap_or_default();
+        let camera_forward = (target_position - camera_position).xy().normalize();
+        
+        let mut input_vector = Vec2::ZERO;
+        if input.keys.contains(&KeyCode::W) {
+            input_vector += Vec2::Y;
+        }
+        if input.keys.contains(&KeyCode::S) {
+            input_vector -= Vec2::Y;
+        }
+        if input.keys.contains(&KeyCode::A) {
+            input_vector -= Vec2::X;
+        }
+        if input.keys.contains(&KeyCode::D) {
+            input_vector += Vec2::X;
+        }
+        
+        if input_vector != Vec2::ZERO {
+            println!("camera_forward: {:?}", camera_forward);
+            let input_vector = input_vector.yx();
+            let movement_rotated = Vec2::new(
+                input_vector.x * camera_forward.x - input_vector.y * camera_forward.y,
+                input_vector.x * camera_forward.y + input_vector.y * camera_forward.x,
+            );
+            move_input.move_direction = movement_rotated;
             move_input.send_server_unreliable();
         }
     });
@@ -138,10 +168,11 @@ pub async fn main() {
             sprint: false,
         };
 
-        let mut send_action = if !delta.keys.is_empty() { true } else { false };
+        let mut send_action = false;
 
         if delta.keys.contains(&KeyCode::LShift) {
             action_input.sprint = true;
+            send_action = true;
         } else if delta.keys_released.contains(&KeyCode::LShift) {
             action_input.sprint = false;
             send_action = true;
@@ -149,18 +180,22 @@ pub async fn main() {
 
         if delta.keys.contains(&KeyCode::Space) {
             action_input.jump = true;
+            send_action = true;
         }
 
-        if delta.keys.contains(&KeyCode::S) {
+        if delta.keys.contains(&KeyCode::Q) {
             action_input.drink = true;
+            send_action = true;
         }
 
-        if delta.keys.contains(&KeyCode::A) {
+        if delta.keys.contains(&KeyCode::E) {
             action_input.interact = true;
+            send_action = true;
         }
 
-        if delta.keys.contains(&KeyCode::D) {
+        if delta.keys.contains(&KeyCode::X) {
             action_input.attack = true;
+            send_action = true;
         }
 
         if send_action {

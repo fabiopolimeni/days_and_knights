@@ -231,27 +231,30 @@ pub async fn main() {
         let player_id = ctx.client_entity_id().unwrap();
         //println!("Player {:?} sent {:?}", player_id, msg);
 
-        if let Some(hit) = physics::raycast_first(msg.screen_ray_origin, msg.screen_ray_direction) {
-            if entity::get_component(hit.entity, physics_layer()).unwrap_or_default()
-                != PhysicsLayer::Ground
-            {
-                return;
-            }
+        // if let Some(hit) = physics::raycast_first(msg.screen_ray_origin, msg.screen_ray_direction) {
+        //     if entity::get_component(hit.entity, physics_layer()).unwrap_or_default()
+        //         != PhysicsLayer::Ground
+        //     {
+        //         return;
+        //     }
 
-            // DEBUG: Remove this debug visualization
-            Entity::new()
-                .with(cube(), ())
-                .with(translation(), hit.position)
-                .with(scale(), Vec3::ONE * 0.1)
-                .with(color(), vec4(0., 1., 0., 1.))
-                .with(remove_at_game_time(), game_time() + Duration::from_secs(2))
-                .spawn();
+        //     // DEBUG: Remove this debug visualization
+        //     Entity::new()
+        //         .with(cube(), ())
+        //         .with(translation(), hit.position)
+        //         .with(scale(), Vec3::ONE * 0.1)
+        //         .with(color(), vec4(0., 1., 0., 1.))
+        //         .with(remove_at_game_time(), game_time() + Duration::from_secs(2))
+        //         .spawn();
 
-            let cur_pos = entity::get_component(player_id, translation()).unwrap_or_default();
-            let move_diff = hit.position - cur_pos;
+        //     let cur_pos = entity::get_component(player_id, translation()).unwrap_or_default();
+        //     let move_vector = hit.position - cur_pos;
+        // }
+        {
+            let move_vector = msg.move_direction;
 
             // Find the direction the player is looking at in World space
-            let look_dir_xy = (hit.position - cur_pos).xy().normalize();
+            let look_dir_xy = move_vector.xy().normalize();
 
             // Find the forward direction of the player in World space
             let cur_orientation = entity::get_component(player_id, rotation()).unwrap_or_default();
@@ -265,7 +268,7 @@ pub async fn main() {
             entity::set_component(player_id, rotation(), cur_rot);
 
             // Only move if the player is not too close to the target
-            if move_diff.length_squared() >= hero::MIN_MOVE_DISTANCE {
+            if move_vector.length_squared() >= hero::MIN_MOVE_DISTANCE {
                 // Find the direction the player is running in World space
                 let run_dir_xy = (move_rot * Vec3::Y).xy().normalize();
                 entity::set_component(player_id, run_direction(), run_dir_xy);
