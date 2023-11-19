@@ -2,16 +2,18 @@ use ambient_api::{
     animation::{AnimationPlayerRef, PlayClipFromUrlNodeRef},
     core::{
         animation::components::{apply_animation_player, start_time},
+        app::components::main_scene,
         ecs::components::remove_at_game_time,
+        messages::Frame,
         model::components::model_from_url,
-        physics::components::plane_collider,
+        physics::components::{cube_collider, plane_collider},
         player::components::is_player,
         primitives::components::{cube, quad},
         rendering::components::{color, sun},
         transform::{
             components::{rotation, scale, translation},
             concepts::{Transformable, TransformableOptional},
-        }, app::components::main_scene, messages::Frame,
+        },
     },
     prelude::*,
     rand,
@@ -46,6 +48,15 @@ pub async fn main() {
         .with(plane_collider(), ())
         .with(physics_layer(), PhysicsLayer::Ground)
         .spawn();
+
+    // Temporary obstacles
+    for _ in 0..30 {
+        Entity::new()
+            .with(cube(), ())
+            .with(cube_collider(), Vec3::ONE)
+            .with(translation(), (random::<Vec2>() * 20.0 - 10.0).extend(1.))
+            .spawn();
+    }
 
     let sun = Entity::new()
         .with(sun(), 0.0)
@@ -166,47 +177,53 @@ pub async fn main() {
         .with(physics_layer(), PhysicsLayer::Character)
         .spawn();
 
-    spawn_query(is_player()).bind(move |players| {
-        // For each player that joins, spawn a random hero
-        for (player_id, _) in players {
+    ClientRequest::subscribe(move |ctx, msg| {
+        let player_id = ctx.client_entity_id().unwrap();
+
+        if msg.join {
+            // Create a hero and let the clinet know its entity id
             let mut rng = rand::thread_rng();
-            let hero = hero_classes[rng.gen_range(0..hero_classes.len())];
-            let hero_str = hero.to_string();
+            let hero_class = hero_classes[rng.gen_range(0..hero_classes.len())];
+            let hero_str = hero_class.to_string();
 
-            entity::add_components(
-                player_id,
-                Entity::new()
-                    .with(
-                        model_from_url(),
-                        assets::url(format!("characters/{}/{}.glb", hero_str, hero_str).as_str()),
-                    )
-                    .with(apply_animation_player(), anim_player_idle.0)
-                    .with(physics_layer(), PhysicsLayer::Character)
-                    .with(locomotion_remaining_time(), 0.0)
-                    .with_merge(Transformable {
-                        local_to_world: Default::default(),
-                        optional: TransformableOptional::default(),
-                    })
-                    .with_merge(CharacterMovement {
-                        character_controller_height: 3.0,
-                        character_controller_radius: 1.0,
-                        physics_controlled: (),
-                        rotation: Quat::IDENTITY,
-                        run_direction: Vec2::ZERO,
-                        vertical_velocity: 0.0,
-                        running: false,
-                        jumping: false,
-                        is_on_ground: true,
-                        optional: CharacterMovementOptional {
-                            run_speed_multiplier: Some(hero::SPEED_MULTIPLIER),
-                            speed: Some(0.0),
-                            ..default()
-                        },
-                    })
-                    .with_merge(Hero::suggested()),
-            );
+            let hero = Entity::new()
+                .with(
+                    model_from_url(),
+                    assets::url(format!("characters/{}/{}.glb", hero_str, hero_str).as_str()),
+                )
+                .with(apply_animation_player(), anim_player_idle.0)
+                .with(physics_layer(), PhysicsLayer::Character)
+                .with(locomotion_remaining_time(), 0.0)
+                .with_merge(Transformable {
+                    local_to_world: Default::default(),
+                    optional: TransformableOptional::default(),
+                })
+                .with_merge(CharacterMovement {
+                    character_controller_height: 3.0,
+                    character_controller_radius: 1.0,
+                    physics_controlled: (),
+                    rotation: Quat::IDENTITY,
+                    run_direction: Vec2::ZERO,
+                    vertical_velocity: 0.0,
+                    running: false,
+                    jumping: false,
+                    is_on_ground: true,
+                    optional: CharacterMovementOptional {
+                        run_speed_multiplier: Some(hero::SPEED_MULTIPLIER),
+                        speed: Some(0.0),
+                        ..default()
+                    },
+                })
+                .with_merge(Hero::suggested());
 
-            println!("Player {:?} joined as {}", player_id, hero);
+            // Add the Hero components to the player entity
+            entity::add_components(player_id, hero);
+
+            // Let the client know the entity id of the hero
+            ServerResponse { accepted: true }
+                .send_client_targeted_reliable(ctx.client_user_id().unwrap());
+
+            println!("Player {:?} requested to join as {}", player_id, hero_class);
         }
     });
 
@@ -277,14 +294,14 @@ pub async fn main() {
                         let is_running =
                             entity::get_component(player_id, running()).unwrap_or_default();
                         if is_running {
-                            println!("Player {:?} is running", player_id);
+                            //println!("Player {:?} is running", player_id);
                             entity::set_component(
                                 player_id,
                                 apply_animation_player(),
                                 anim_player_run.0,
                             );
                         } else {
-                            println!("Player {:?} is walking", player_id);
+                            //println!("Player {:?} is walking", player_id);
                             entity::set_component(
                                 player_id,
                                 apply_animation_player(),
@@ -349,44 +366,45 @@ pub async fn main() {
 
     // Every frame, check whether a player has a start_time() component and if so, check whether the animation is done.
     query(is_player()).each_frame(move |players| {
-            for (player_id, _) in players {
-                if !entity::has_component(player_id, start_time()) {
-                    continue;
-                }
-
-                let clip_start_time = entity::get_component(player_id, start_time()).unwrap_or_default();
-                let elapsed_time = (game_time() - clip_start_time).as_secs_f32();
-                let anim_player = entity::get_component(player_id, apply_animation_player())
-                    .unwrap_or_default();
-
-                if anim_player == anim_player_drink.0 {
-                    if elapsed_time >= drink_clip.peek_clip_duration().unwrap_or_default() {
-                        entity::set_component(player_id, drinking(), false);
-                        entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
-                        entity::remove_component(player_id, start_time());
-                        println!("Player {:?} is done drinking", player_id);
-                    }
-                } else if anim_player == anim_player_attack.0 {
-                    if elapsed_time >= attack_clip.peek_clip_duration().unwrap_or_default() {
-                        entity::set_component(player_id, attacking(), false);
-                        entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
-                        entity::remove_component(player_id, start_time());
-                        println!("Player {:?} is done attacking", player_id);
-                    }
-                } else if anim_player == anim_player_interact.0 {
-                    if elapsed_time >= interact_clip.peek_clip_duration().unwrap_or_default() {
-                        entity::set_component(player_id, interacting(), false);
-                        entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
-                        entity::remove_component(player_id, start_time());
-                        println!("Player {:?} is done interacting", player_id);
-                    }
-                } else {
-                    // Clenup states in case the animation was interrupted
-                    entity::set_component(player_id, drinking(), false);
-                    entity::set_component(player_id, attacking(), false);
-                    entity::set_component(player_id, interacting(), false);
-                    entity::remove_component(player_id, start_time());
-                }
+        for (player_id, _) in players {
+            if !entity::has_component(player_id, start_time()) {
+                continue;
             }
-        });
+
+            let clip_start_time =
+                entity::get_component(player_id, start_time()).unwrap_or_default();
+            let elapsed_time = (game_time() - clip_start_time).as_secs_f32();
+            let anim_player =
+                entity::get_component(player_id, apply_animation_player()).unwrap_or_default();
+
+            if anim_player == anim_player_drink.0 {
+                if elapsed_time >= drink_clip.peek_clip_duration().unwrap_or_default() {
+                    entity::set_component(player_id, drinking(), false);
+                    entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                    entity::remove_component(player_id, start_time());
+                    println!("Player {:?} is done drinking", player_id);
+                }
+            } else if anim_player == anim_player_attack.0 {
+                if elapsed_time >= attack_clip.peek_clip_duration().unwrap_or_default() {
+                    entity::set_component(player_id, attacking(), false);
+                    entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                    entity::remove_component(player_id, start_time());
+                    println!("Player {:?} is done attacking", player_id);
+                }
+            } else if anim_player == anim_player_interact.0 {
+                if elapsed_time >= interact_clip.peek_clip_duration().unwrap_or_default() {
+                    entity::set_component(player_id, interacting(), false);
+                    entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                    entity::remove_component(player_id, start_time());
+                    println!("Player {:?} is done interacting", player_id);
+                }
+            } else {
+                // Clenup states in case the animation was interrupted
+                entity::set_component(player_id, drinking(), false);
+                entity::set_component(player_id, attacking(), false);
+                entity::set_component(player_id, interacting(), false);
+                entity::remove_component(player_id, start_time());
+            }
+        }
+    });
 }

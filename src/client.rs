@@ -1,23 +1,32 @@
 use std::f32::consts::PI;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use ambient_api::{
     core::{
         messages::Frame,
         rendering::components::{fog_density, light_ambient, light_diffuse, sky, sun},
-        transform::components::rotation,
+        transform::components::{lookat_target, rotation, translation},
     },
-    prelude::*, entity::get_component,
+    entity::get_component,
+    prelude::*,
 };
 
-use packages::{this::messages::*, orbit_camera::components::camera_angle};
-use packages::{orbit_camera::concepts::OrbitCamera, orbit_camera::concepts::OrbitCameraOptional, this::messages::Movement};
+use packages::this::messages::*;
+
+use packages::{
+    orbit_camera::components::*, orbit_camera::concepts::*,
+};
+
+static JOINED: AtomicBool = AtomicBool::new(false);
+
+const MAX_CAMERA_DISTANCE: f32 = 25.0;
 
 #[main]
-pub fn main() {
+pub async fn main() {
     let camera = OrbitCamera {
         is_orbit_camera: (),
         optional: OrbitCameraOptional {
-            camera_distance: Some(25.0),
+            camera_distance: Some(MAX_CAMERA_DISTANCE),
             camera_angle: Some(Vec2::new(PI, PI / 4.0)),
             ..default()
         },
@@ -26,6 +35,7 @@ pub fn main() {
 
     Entity::new().with(sky(), ()).spawn();
 
+    // When a sun is spawned, add lighting components
     spawn_query(sun()).bind(move |suns| {
         let sun = suns[0].0;
         entity::add_component(sun, light_ambient(), Vec3::ONE * 0.1);
@@ -33,6 +43,29 @@ pub fn main() {
         entity::add_component(sun, fog_density(), 0.0);
     });
 
+    let join_request = ClientRequest {
+        join: true,
+        disconnect: false,
+    };
+
+    join_request.send_server_reliable();
+
+    ServerResponse::subscribe(move |_ctx, msg| {
+        if msg.accepted {
+            JOINED.store(true, Ordering::Release);
+            println!("Player {} joined server", player::get_local());
+        } else {
+            println!("Player {} failed to join server", player::get_local());
+        }
+    });
+
+    Frame::subscribe(move |_| {
+        if !JOINED.load(Ordering::Acquire) {
+            return;
+        }
+    });
+
+    // Update sun lighting components based on whether it is day or night
     query(sun()).each_frame(move |suns| {
         let rot = entity::get_component(suns[0].0, rotation()).unwrap_or_default();
         let (_, _, z) = rot.to_euler(glam::EulerRot::XYZ);
@@ -51,8 +84,24 @@ pub fn main() {
         let mut angle = get_component(camera, camera_angle()).unwrap_or_default();
         angle.y = PI / 4.0;
         entity::set_component(camera, camera_angle(), angle);
+
+        // Fix camera distance
+        let mut distance = get_component(camera, camera_distance()).unwrap_or_default();
+        distance = distance.clamp(0.0, MAX_CAMERA_DISTANCE);
+        entity::set_component(camera, camera_distance(), distance);
+
+        // Make the camera look at the hero
+        let player_id = player::get_local();
+        if entity::has_component(player_id, translation()) {
+            let hero_pos = entity::get_component(player_id, translation()).unwrap_or_default();
+
+            if entity::has_component(camera, lookat_target()) {
+                entity::set_component(camera, lookat_target(), hero_pos);
+            }
+        }
     });
 
+    // Sent movement input to the server
     fixed_rate_tick(Duration::from_millis(50), move |_| {
         let Some(camera_id) = camera::get_active() else {
             return;
@@ -78,7 +127,7 @@ pub fn main() {
         // if !is_game_focused() {
         //     return;
         // }
-        
+
         let (delta, _) = input::get_delta();
 
         let mut action_input = Action {
@@ -89,11 +138,7 @@ pub fn main() {
             sprint: false,
         };
 
-        let mut send_action = if !delta.keys.is_empty() {
-            true
-        } else {
-            false
-        };
+        let mut send_action = if !delta.keys.is_empty() { true } else { false };
 
         if delta.keys.contains(&KeyCode::LShift) {
             action_input.sprint = true;
@@ -105,7 +150,7 @@ pub fn main() {
         if delta.keys.contains(&KeyCode::Space) {
             action_input.jump = true;
         }
-        
+
         if delta.keys.contains(&KeyCode::S) {
             action_input.drink = true;
         }
@@ -119,7 +164,7 @@ pub fn main() {
         }
 
         if send_action {
-            action_input.send_server_unreliable();
+            action_input.send_server_reliable();
         }
     });
 }

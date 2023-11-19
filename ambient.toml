@@ -10,6 +10,13 @@ orbit_camera = { deployment = "16errWVktnKFdrbFofKCAE" }
 unit_schema = { deployment = "hfv4W9UuED197vKDfol7g" }
 character_movement = { deployment = "2TMMtfgQwAplpQtmAfyzci" }
 
+[messages.ClientRequest.fields]
+join = "Bool"
+disconnect = "Bool"
+
+[messages.ServerResponse.fields]
+accepted = "Bool"
+
 [messages.Movement.Input]
 descritpion = "Input messages for heros movement"
 
