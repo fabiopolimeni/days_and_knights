@@ -3,7 +3,6 @@ use ambient_api::{
     core::{
         animation::components::{apply_animation_player, start_time},
         app::components::main_scene,
-        ecs::components::remove_at_game_time,
         messages::Frame,
         model::components::model_from_url,
         physics::components::{cube_collider, plane_collider},
@@ -346,19 +345,19 @@ pub async fn main() {
         let is_interacting = entity::get_component(player_id, interacting()).unwrap_or_default();
         let is_acting = is_drinking || is_attacking || is_interacting;
 
-        if msg.drink && !is_acting && !is_moving {
+        if msg.drink && !is_acting {
             drink_clip.restart();
             entity::set_component(player_id, apply_animation_player(), anim_player_drink.0);
             entity::set_component(player_id, drinking(), true);
             entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is drinking", player_id);
-        } else if msg.attack && !is_acting && !is_moving {
+        } else if msg.attack && !is_acting {
             attack_clip.restart();
             entity::set_component(player_id, apply_animation_player(), anim_player_attack.0);
             entity::set_component(player_id, attacking(), true);
             entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is attacking", player_id);
-        } else if msg.interact && !is_acting && !is_moving {
+        } else if msg.interact && !is_acting {
             interact_clip.restart();
             entity::set_component(player_id, apply_animation_player(), anim_player_interact.0);
             entity::set_component(player_id, interacting(), true);
@@ -402,7 +401,7 @@ pub async fn main() {
                     println!("Player {:?} is done interacting", player_id);
                 }
             } else {
-                // Clenup states in case the animation was interrupted
+                // Cleanup states in case the animation was interrupted
                 entity::set_component(player_id, drinking(), false);
                 entity::set_component(player_id, attacking(), false);
                 entity::set_component(player_id, interacting(), false);
