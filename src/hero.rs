@@ -9,20 +9,20 @@ pub const MIN_MOVE_DISTANCE: f32 = 0.2;
 pub const MAX_REMAINING_LOCOMOTION_TIME: f32 = 1. / 10.;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Class {
+pub enum HeroClass {
     Barbarian,
     Knight,
     Mage,
     Rogue,
 }
 
-impl fmt::Display for Class {
+impl fmt::Display for HeroClass {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Class::Barbarian => write!(f, "Barbarian"),
-            Class::Knight => write!(f, "Knight"),
-            Class::Mage => write!(f, "Mage"),
-            Class::Rogue => write!(f, "Rogue"),
+            HeroClass::Barbarian => write!(f, "Barbarian"),
+            HeroClass::Knight => write!(f, "Knight"),
+            HeroClass::Mage => write!(f, "Mage"),
+            HeroClass::Rogue => write!(f, "Rogue"),
         }
     }
 }

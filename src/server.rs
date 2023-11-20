@@ -5,7 +5,7 @@ use ambient_api::{
         app::components::main_scene,
         messages::Frame,
         model::components::model_from_url,
-        physics::components::{cube_collider, plane_collider},
+        physics::components::{cube_collider, plane_collider, visualize_collider},
         player::components::is_player,
         primitives::components::{cube, quad},
         rendering::components::{color, sun},
@@ -29,14 +29,22 @@ use packages::this::messages::*;
 use packages::this::types::*;
 
 mod hero;
+mod skeleton;
 
 #[main]
 pub async fn main() {
     let hero_classes = [
-        hero::Class::Barbarian,
-        hero::Class::Knight,
-        hero::Class::Mage,
-        hero::Class::Rogue,
+        hero::HeroClass::Barbarian,
+        hero::HeroClass::Knight,
+        hero::HeroClass::Mage,
+        hero::HeroClass::Rogue,
+    ];
+
+    let skel_classes = [
+        skeleton::SkeletonClass::Minon,
+        skeleton::SkeletonClass::Warrior,
+        skeleton::SkeletonClass::Shaman,
+        skeleton::SkeletonClass::Archer,
     ];
 
     // Temporary ground
@@ -47,15 +55,6 @@ pub async fn main() {
         .with(plane_collider(), ())
         .with(physics_layer(), PhysicsLayer::Ground)
         .spawn();
-
-    // Temporary obstacles
-    for _ in 0..30 {
-        Entity::new()
-            .with(cube(), ())
-            .with(cube_collider(), Vec3::ONE)
-            .with(translation(), (random::<Vec2>() * 20.0 - 10.0).extend(1.))
-            .spawn();
-    }
 
     let sun = Entity::new()
         .with(sun(), 0.0)
@@ -75,7 +74,7 @@ pub async fn main() {
 
     // Load all hero animations.
     // Note: Because all heroes share the same animations, we can simply load those ones from the first hero.
-    let idle_clip = PlayClipFromUrlNodeRef::new(assets::url(
+    let hero_idle_clip = PlayClipFromUrlNodeRef::new(assets::url(
         format!(
             "characters/{}/{}.glb/animations/Idle_36.anim",
             hero_classes[0].to_string(),
@@ -84,7 +83,7 @@ pub async fn main() {
         .as_str(),
     ));
 
-    let walking_clip = PlayClipFromUrlNodeRef::new(assets::url(
+    let hero_walking_clip = PlayClipFromUrlNodeRef::new(assets::url(
         format!(
             "characters/{}/{}.glb/animations/Walking_B_73.anim",
             hero_classes[0].to_string(),
@@ -93,7 +92,7 @@ pub async fn main() {
         .as_str(),
     ));
 
-    let running_clip = PlayClipFromUrlNodeRef::new(assets::url(
+    let hero_running_clip = PlayClipFromUrlNodeRef::new(assets::url(
         format!(
             "characters/{}/{}.glb/animations/Running_A_48.anim",
             hero_classes[0].to_string(),
@@ -102,7 +101,7 @@ pub async fn main() {
         .as_str(),
     ));
 
-    let jump_clip = PlayClipFromUrlNodeRef::new(assets::url(
+    let hero_jump_clip = PlayClipFromUrlNodeRef::new(assets::url(
         format!(
             "characters/{}/{}.glb/animations/Jump_Full_Short_39.anim",
             hero_classes[0].to_string(),
@@ -111,7 +110,7 @@ pub async fn main() {
         .as_str(),
     ));
 
-    let drink_clip = PlayClipFromUrlNodeRef::new(assets::url(
+    let hero_drink_clip = PlayClipFromUrlNodeRef::new(assets::url(
         format!(
             "characters/{}/{}.glb/animations/Use_Item_71.anim",
             hero_classes[0].to_string(),
@@ -120,7 +119,7 @@ pub async fn main() {
         .as_str(),
     ));
 
-    let attack_clip = PlayClipFromUrlNodeRef::new(assets::url(
+    let hero_attack_clip = PlayClipFromUrlNodeRef::new(assets::url(
         format!(
             "characters/{}/{}.glb/animations/1H_Melee_Attack_Slice_Diagonal_1.anim",
             hero_classes[0].to_string(),
@@ -129,7 +128,7 @@ pub async fn main() {
         .as_str(),
     ));
 
-    let interact_clip = PlayClipFromUrlNodeRef::new(assets::url(
+    let hero_interact_clip = PlayClipFromUrlNodeRef::new(assets::url(
         format!(
             "characters/{}/{}.glb/animations/Interact_37.anim",
             hero_classes[0].to_string(),
@@ -138,43 +137,60 @@ pub async fn main() {
         .as_str(),
     ));
 
-    idle_clip.wait_for_load().await;
-    walking_clip.wait_for_load().await;
-    running_clip.wait_for_load().await;
-    jump_clip.wait_for_load().await;
-    drink_clip.wait_for_load().await;
-    attack_clip.wait_for_load().await;
-    interact_clip.wait_for_load().await;
+    hero_idle_clip.wait_for_load().await;
+    hero_walking_clip.wait_for_load().await;
+    hero_running_clip.wait_for_load().await;
+    hero_jump_clip.wait_for_load().await;
+    hero_drink_clip.wait_for_load().await;
+    hero_attack_clip.wait_for_load().await;
+    hero_interact_clip.wait_for_load().await;
 
-    jump_clip.looping(false);
-    drink_clip.looping(false);
-    attack_clip.looping(false);
-    interact_clip.looping(false);
+    hero_jump_clip.looping(false);
+    hero_drink_clip.looping(false);
+    hero_attack_clip.looping(false);
+    hero_interact_clip.looping(false);
 
-    let anim_player_idle = AnimationPlayerRef::new(&idle_clip);
-    let anim_player_walk = AnimationPlayerRef::new(&walking_clip);
-    let anim_player_run = AnimationPlayerRef::new(&running_clip);
-    let anim_player_jump = AnimationPlayerRef::new(&jump_clip);
-    let anim_player_drink = AnimationPlayerRef::new(&drink_clip);
-    let anim_player_attack = AnimationPlayerRef::new(&attack_clip);
-    let anim_player_interact = AnimationPlayerRef::new(&interact_clip);
+    let hero_anim_player_idle = AnimationPlayerRef::new(&hero_idle_clip);
+    let hero_anim_player_walk = AnimationPlayerRef::new(&hero_walking_clip);
+    let hero_anim_player_run = AnimationPlayerRef::new(&hero_running_clip);
+    let hero_anim_player_jump = AnimationPlayerRef::new(&hero_jump_clip);
+    let hero_anim_player_drink = AnimationPlayerRef::new(&hero_drink_clip);
+    let hero_anim_player_attack = AnimationPlayerRef::new(&hero_attack_clip);
+    let hero_anim_player_interact = AnimationPlayerRef::new(&hero_interact_clip);
 
-    // Spawn a skeleton
-    let skeleton = Entity::new()
-        .with(
-            model_from_url(),
-            assets::url("skeletons/Mage/character_skeleton_mage.glb"),
-        )
-        .with_merge(Transformable {
-            local_to_world: Default::default(),
-            optional: TransformableOptional {
-                translation: Some(vec3(4.0, 2.0, 0.0)),
-                ..default()
-            },
-        })
-        .with(apply_animation_player(), anim_player_idle.0)
-        .with(physics_layer(), PhysicsLayer::Character)
-        .spawn();
+    // Load animations for the skeletons
+    let skeleton_idle_clip = PlayClipFromUrlNodeRef::new(assets::url(
+        "skeletons/skeleton_anims.glb/animations/Idle_15.anim",
+    ));
+
+    skeleton_idle_clip.wait_for_load().await;
+    let skeleton_anim_player_idle = AnimationPlayerRef::new(&skeleton_idle_clip);
+
+    // Spawn random skeletons
+    for _ in 0..10 {
+        let mut rng = rand::thread_rng();
+        let skel_class = skel_classes[rng.gen_range(0..hero_classes.len())];
+        let skel_str = skel_class.to_string();
+            
+        Entity::new()
+            .with(
+                model_from_url(),
+                assets::url(format!("skeletons/{}.glb", skel_str).as_str()),
+            )
+            .with_merge(Transformable {
+                local_to_world: Default::default(),
+                optional: TransformableOptional {
+                    translation: Some(vec3(4.0, 2.0, 0.0)),
+                    ..default()
+                },
+            })
+            .with(apply_animation_player(), skeleton_anim_player_idle.0)
+            .with(physics_layer(), PhysicsLayer::Character)
+            //.with(visualize_collider(), ())
+            .with(cube_collider(), Vec3::ONE)
+            .with(translation(), (random::<Vec2>() * 20.0 - 10.0).extend(0.))
+            .spawn();
+        }
 
     ClientRequest::subscribe(move |ctx, msg| {
         let player_id = ctx.client_entity_id().unwrap();
@@ -190,7 +206,7 @@ pub async fn main() {
                     model_from_url(),
                     assets::url(format!("characters/{}/{}.glb", hero_str, hero_str).as_str()),
                 )
-                .with(apply_animation_player(), anim_player_idle.0)
+                .with(apply_animation_player(), hero_anim_player_idle.0)
                 .with(physics_layer(), PhysicsLayer::Character)
                 .with(locomotion_remaining_time(), 0.0)
                 .with_merge(Transformable {
@@ -300,14 +316,14 @@ pub async fn main() {
                             entity::set_component(
                                 player_id,
                                 apply_animation_player(),
-                                anim_player_run.0,
+                                hero_anim_player_run.0,
                             );
                         } else {
                             //println!("Player {:?} is walking", player_id);
                             entity::set_component(
                                 player_id,
                                 apply_animation_player(),
-                                anim_player_walk.0,
+                                hero_anim_player_walk.0,
                             );
                         }
                     }
@@ -316,7 +332,11 @@ pub async fn main() {
                     entity::set_component(player_id, locomotion_remaining_time(), 0.0);
                     entity::set_component(player_id, speed(), 0.0);
                     entity::set_component(player_id, moving(), false);
-                    entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                    entity::set_component(
+                        player_id,
+                        apply_animation_player(),
+                        hero_anim_player_idle.0,
+                    );
                 }
             }
         });
@@ -329,7 +349,7 @@ pub async fn main() {
         if msg.jump == true && is_on_ground {
             //entity::set_component(player_id, vertical_velocity(), 0.1);
             entity::set_component(player_id, jumping(), true);
-            entity::set_component(player_id, apply_animation_player(), anim_player_jump.0);
+            entity::set_component(player_id, apply_animation_player(), hero_anim_player_jump.0);
             println!("Player {:?} is jumping", player_id);
         }
 
@@ -346,20 +366,32 @@ pub async fn main() {
         let is_acting = is_drinking || is_attacking || is_interacting;
 
         if msg.drink && !is_acting {
-            drink_clip.restart();
-            entity::set_component(player_id, apply_animation_player(), anim_player_drink.0);
+            hero_drink_clip.restart();
+            entity::set_component(
+                player_id,
+                apply_animation_player(),
+                hero_anim_player_drink.0,
+            );
             entity::set_component(player_id, drinking(), true);
             entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is drinking", player_id);
         } else if msg.attack && !is_acting {
-            attack_clip.restart();
-            entity::set_component(player_id, apply_animation_player(), anim_player_attack.0);
+            hero_attack_clip.restart();
+            entity::set_component(
+                player_id,
+                apply_animation_player(),
+                hero_anim_player_attack.0,
+            );
             entity::set_component(player_id, attacking(), true);
             entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is attacking", player_id);
         } else if msg.interact && !is_acting {
-            interact_clip.restart();
-            entity::set_component(player_id, apply_animation_player(), anim_player_interact.0);
+            hero_interact_clip.restart();
+            entity::set_component(
+                player_id,
+                apply_animation_player(),
+                hero_anim_player_interact.0,
+            );
             entity::set_component(player_id, interacting(), true);
             entity::add_component(player_id, start_time(), game_time());
             println!("Player {:?} is interacting", player_id);
@@ -379,24 +411,36 @@ pub async fn main() {
             let anim_player =
                 entity::get_component(player_id, apply_animation_player()).unwrap_or_default();
 
-            if anim_player == anim_player_drink.0 {
-                if elapsed_time >= drink_clip.peek_clip_duration().unwrap_or_default() {
+            if anim_player == hero_anim_player_drink.0 {
+                if elapsed_time >= hero_drink_clip.peek_clip_duration().unwrap_or_default() {
                     entity::set_component(player_id, drinking(), false);
-                    entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                    entity::set_component(
+                        player_id,
+                        apply_animation_player(),
+                        hero_anim_player_idle.0,
+                    );
                     entity::remove_component(player_id, start_time());
                     println!("Player {:?} is done drinking", player_id);
                 }
-            } else if anim_player == anim_player_attack.0 {
-                if elapsed_time >= attack_clip.peek_clip_duration().unwrap_or_default() {
+            } else if anim_player == hero_anim_player_attack.0 {
+                if elapsed_time >= hero_attack_clip.peek_clip_duration().unwrap_or_default() {
                     entity::set_component(player_id, attacking(), false);
-                    entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                    entity::set_component(
+                        player_id,
+                        apply_animation_player(),
+                        hero_anim_player_idle.0,
+                    );
                     entity::remove_component(player_id, start_time());
                     println!("Player {:?} is done attacking", player_id);
                 }
-            } else if anim_player == anim_player_interact.0 {
-                if elapsed_time >= interact_clip.peek_clip_duration().unwrap_or_default() {
+            } else if anim_player == hero_anim_player_interact.0 {
+                if elapsed_time >= hero_interact_clip.peek_clip_duration().unwrap_or_default() {
                     entity::set_component(player_id, interacting(), false);
-                    entity::set_component(player_id, apply_animation_player(), anim_player_idle.0);
+                    entity::set_component(
+                        player_id,
+                        apply_animation_player(),
+                        hero_anim_player_idle.0,
+                    );
                     entity::remove_component(player_id, start_time());
                     println!("Player {:?} is done interacting", player_id);
                 }

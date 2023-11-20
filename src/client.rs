@@ -141,7 +141,7 @@ pub async fn main() {
         }
         
         if input_vector != Vec2::ZERO {
-            println!("camera_forward: {:?}", camera_forward);
+            //println!("camera_forward: {:?}", camera_forward);
             let input_vector = input_vector.yx();
             let movement_rotated = Vec2::new(
                 input_vector.x * camera_forward.x - input_vector.y * camera_forward.y,
