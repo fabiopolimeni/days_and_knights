@@ -18,7 +18,6 @@ use ambient_api::{
     rand,
 };
 
-use hero::MAX_REMAINING_LOCOMOTION_TIME;
 use packages::character_movement::concepts::*;
 use packages::unit_schema::components::*;
 
@@ -27,6 +26,7 @@ use packages::this::components::*;
 use packages::this::concepts::*;
 use packages::this::messages::*;
 use packages::this::types::*;
+use skeleton::SkeletonClass;
 
 mod hero;
 mod skeleton;
@@ -169,7 +169,7 @@ pub async fn main() {
     // Spawn random skeletons
     for _ in 0..10 {
         let mut rng = rand::thread_rng();
-        let skel_class = skel_classes[rng.gen_range(0..hero_classes.len())];
+        let skel_class = skel_classes[rng.gen_range(0..skel_classes.len())];
         let skel_str = skel_class.to_string();
             
         Entity::new()
@@ -189,6 +189,7 @@ pub async fn main() {
             //.with(visualize_collider(), ())
             .with(cube_collider(), Vec3::ONE)
             .with(translation(), (random::<Vec2>() * 20.0 - 10.0).extend(0.))
+            .with_merge(Skeleton::suggested())
             .spawn();
         }
 
@@ -291,7 +292,7 @@ pub async fn main() {
                 entity::set_component(
                     player_id,
                     locomotion_remaining_time(),
-                    MAX_REMAINING_LOCOMOTION_TIME,
+                    hero::MAX_REMAINING_LOCOMOTION_TIME,
                 );
             }
         }

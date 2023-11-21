@@ -42,11 +42,14 @@ members = { Ground = "Ground", Character = "Character", Interactable = "Interact
 [components]
 physics_layer = { type = "PhysicsLayer", name = "Physics Layers Component", description = "Physics layers used to filter physics collisions", attributes = ["Debuggable"] }
 is_hero = { type = "Empty", attributes = ["Debuggable", "Networked"] }
+is_skeleton = { type = "Empty", attributes = ["Debuggable", "Networked"] }
 drinking = { type = "Bool", name = "Drinking Component", description = "Component used to indicate that character is drinking", attributes = ["Debuggable"] }
 interacting = { type = "Bool", name = "Interacting Component", description = "Component used to indicate that character is interacting", attributes = ["Debuggable"] }
 moving = { type = "Bool", name = "Moving Component", description = "Component used to indicate that character is moving", attributes = ["Debuggable"] }
 attacking = { type = "Bool", name = "Attacking Component", description = "Component used to indicate that character is attacking", attributes = ["Debuggable"] }
 locomotion_remaining_time = { type = "F32", name = "Locomotion Remaining Time Component", description = "Component used to indicate how much time is left for locomotion", attributes = ["Debuggable"] }
+health = { type = "F32", name = "Health", description = "This game object's health. \"Standard\" health is 100 HP.", attributes = ["Debuggable", "Networked",] }
+max_health = { type = "F32", name = "Max Health", description = "Maximum health of the object. 100 HP is \"standard.\"", attributes = ["Debuggable", "Networked",] }
 
 [concepts.Hero]
 name = "Hero"
@@ -57,3 +60,11 @@ drinking = { suggested = false }
 interacting = { suggested = false }
 moving = { suggested = false }
 attacking = { suggested = false }
+
+[concepts.Skeleton]
+name = "Skeleton"
+description = "Skeleton is a non-playable character"
+[concepts.Skeleton.components.required]
+is_skeleton = { suggested = {} }
+health = { suggested = 100.0 }
+max_health = { suggested = 100.0 }
