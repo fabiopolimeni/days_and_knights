@@ -3,9 +3,9 @@ use ambient_api::{
     core::{
         animation::components::{apply_animation_player, start_time},
         app::components::main_scene,
-        messages::Frame,
+        messages::{Frame, Collision},
         model::components::model_from_url,
-        physics::components::{cube_collider, plane_collider, visualize_collider},
+        physics::components::{cube_collider, plane_collider, visualize_collider, physics_controlled, dynamic},
         player::components::is_player,
         primitives::components::{cube, quad},
         rendering::components::{color, sun},
@@ -70,6 +70,10 @@ pub async fn main() {
 
         let rot = Quat::from_axis_angle(vec3(0.0, 1.0, 0.5).normalize(), time * sun_speed);
         entity::set_component(sun, rotation(), rot);
+    });
+
+    Collision::subscribe(move|collision| {
+        println!("Collisions between {:?}", collision.ids);
     });
 
     // Load all hero animations.
@@ -191,6 +195,8 @@ pub async fn main() {
             //.with(visualize_collider(), ())
             .with(cube_collider(), Vec3::new(1., 1., 3.))
             .with(translation(), (random::<Vec2>() * 20.0 - 10.0).extend(0.))
+            .with(dynamic(), true)
+            .with(physics_controlled(), ())
             .with_merge(Skeleton::suggested())
             .spawn();
         }
@@ -362,7 +368,7 @@ pub async fn main() {
             entity::set_component(player_id, running(), false);
         }
 
-        let is_moving = entity::get_component(player_id, moving()).unwrap_or_default();
+        //let is_moving = entity::get_component(player_id, moving()).unwrap_or_default();
         let is_drinking = entity::get_component(player_id, drinking()).unwrap_or_default();
         let is_attacking = entity::get_component(player_id, attacking()).unwrap_or_default();
         let is_interacting = entity::get_component(player_id, interacting()).unwrap_or_default();

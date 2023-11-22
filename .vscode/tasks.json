@@ -11,6 +11,11 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Ambient Run",
+            "type": "shell",
+            "command": "ambient-dev run"
         }
     ]
 }
