@@ -81,9 +81,9 @@ pub async fn main() {
 
     Frame::subscribe(move |_| {
         // Fix camera angle
-        let mut angle = get_component(camera, camera_angle()).unwrap_or_default();
-        angle.y = PI / 4.0;
-        entity::set_component(camera, camera_angle(), angle);
+        // let mut angle = get_component(camera, camera_angle()).unwrap_or_default();
+        // angle.y = PI / 4.0;
+        // entity::set_component(camera, camera_angle(), angle);
 
         // Fix camera distance
         let mut distance = get_component(camera, camera_distance()).unwrap_or_default();

@@ -171,6 +171,8 @@ pub async fn main() {
         let mut rng = rand::thread_rng();
         let skel_class = skel_classes[rng.gen_range(0..skel_classes.len())];
         let skel_str = skel_class.to_string();
+
+        println!("Spawning skeleton {}", skel_str);
             
         Entity::new()
             .with(
@@ -187,7 +189,7 @@ pub async fn main() {
             .with(apply_animation_player(), skeleton_anim_player_idle.0)
             .with(physics_layer(), PhysicsLayer::Character)
             //.with(visualize_collider(), ())
-            .with(cube_collider(), Vec3::ONE)
+            .with(cube_collider(), Vec3::new(1., 1., 3.))
             .with(translation(), (random::<Vec2>() * 20.0 - 10.0).extend(0.))
             .with_merge(Skeleton::suggested())
             .spawn();
