@@ -193,7 +193,7 @@ pub async fn main() {
             send_action = true;
         }
 
-        if delta.keys.contains(&KeyCode::X) {
+        if delta.keys.contains(&KeyCode::C) {
             action_input.attack = true;
             send_action = true;
         }

@@ -26,7 +26,6 @@ use packages::this::components::*;
 use packages::this::concepts::*;
 use packages::this::messages::*;
 use packages::this::types::*;
-use skeleton::SkeletonClass;
 
 mod hero;
 mod skeleton;
